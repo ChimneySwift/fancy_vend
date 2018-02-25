@@ -156,3 +156,12 @@ If a user has the `protection_bypass` privilage, they will be able to access the
 Fancy vend uses only one infrequent abm to refresh vendor objects in the event of a clearobjects. No other vendor updating is done unless a player purchases from the vendor or adjusts settings.
 
 Note: Some clients using mobile and/or older devices, including PCs, may experience additional lag if many fancy vendors are used in a small space, however not to an extent greater than the majority of shops where players use itemframes or pedestals to achieve the same functionality as the fancy vendor's display.
+
+**Settings:**
+The following minetest.conf settings can be configured to further modify the appearence of Fancy Vendors:
+
+`fancy_vend_display_node` - Change the display node to something other than `default:obsidian_glass` (ensure mod this node belongs to is in depends.txt)
+
+`fancy_vend_log_max` - Change the maximum number of logs stored in a vendor's metadata
+
+`fancy_vend_autorotate_speed` - Change the speed at which the display object rotates
