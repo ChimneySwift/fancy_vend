@@ -1,5 +1,5 @@
 # Fancy Vend
-A full-featured, fully-integrated vendor mod for Minetest. **(NOTE: The source code for this mod is yet to be released)**
+A full-featured, fully-integrated vendor mod for Minetest.
 
 There are many vendor mods for Minetest, but most have too few options, lack support for automation mods, or are too tedious to set up and maintain. Fancy vendors are entirely self-contained nodes which provide light, trade, display and store items. Fancy vendors are pipeworks, digilines and awards compatible, enabling a variety of automation-based features.
 
@@ -16,6 +16,8 @@ There are many vendor mods for Minetest, but most have too few options, lack sup
 **Optional Dependencies:** [pipeworks](https://github.com/minetest-mods/pipeworks), [digilines](https://github.com/minetest-mods/digilines), [awards](https://github.com/minetest-mods/awards)
 
 **Contributors:** Many thanks to LadyK for the textures, patience and ideas.
+
+**Note:** **This mod is still a WIP**, while the currently available version is as bug-free as possible, there is no guarentees. Please install this mod with care and report any possible issues ASAP so they can be resolved. Thank you for your cooperation, we hope you enjoy Fancy Vend and hope to hear your suggestions for improvement.
 
 ## Crafting and basic configuration
 A fancy vendor can be crafted as follows:
