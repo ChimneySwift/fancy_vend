@@ -17,7 +17,7 @@ There are many vendor mods for Minetest, but most have too few options, lack sup
 
 **Contributors:** Many thanks to LadyK for the textures, patience and ideas.
 
-**Note:** **This mod is still a WIP**, while the currently available version is as bug-free as possible, there is no guarentees. Please install this mod with care and report any possible issues ASAP so they can be resolved. Thank you for your cooperation, we hope you enjoy Fancy Vend and hope to hear your suggestions for improvement.
+**Note:** **This mod is still a WIP**, while the currently available version has been tested to try and limit the possibility of bugs, there are no guarentees. Please install this mod with care and report any possible issues ASAP so they can be resolved. Thank you for your cooperation, we hope you enjoy Fancy Vend and look forward to hearing your suggestions for improvement.
 
 ## Crafting and basic configuration
 A fancy vendor can be crafted as follows:
