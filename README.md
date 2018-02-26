@@ -127,6 +127,9 @@ local settings_default = {
 This feature could theoretically make rewards-based shops feasable.
 
 ## Upgrading vendors
+
+**NOTE:** If you wish to simply run this mod in parallel with existing vendor mods, simply load this mod (no configuration required)
+
 Many servers already have vendor mods in place. Fancy Vend makes it easier for servers to upgrade with it's unique upgrading system. Fancy Vend will replace vendors from the supported vendor mods (money, vendor, easyvend and currency) with upgrade nodes. Upgrade nodes allow for sellers to empty the old node's inventory (if applicable), dig the upgrade node (which will drop a regular vendor) and set up a new shop. if a user tried to place an upgrade node, the stack is turned into a stack of regular vendors.
 
 Since upgrade functionality can be achieved without the old mod loaded, the server owner must add the old vendor mod's name to `minetest.conf` as follows:
