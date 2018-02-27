@@ -27,6 +27,7 @@ minetest.register_node("fancy_vend:display_node", display_node_def)
 minetest.register_craftitem("fancy_vend:inactive",{inventory_image = "inactive.png",})
 
 minetest.register_privilege("admin_vendor", "Enables the user to set regular vendors to admin vendors.")
+minetest.register_privilege("disable_vendor", "Enables the user to set all vendors to inactive.")
 
 local function bts(bool)
     if bool == false then
@@ -47,6 +48,28 @@ local function stb(str)
         return str
     end
 end
+
+local modstorage = minetest.get_mod_storage()
+
+if modstorage:get_string("all_inactive_force") == "" then
+    modstorage:set_string("all_inactive_force", "false")
+end
+
+local all_inactive_force = stb(modstorage:get_string("all_inactive_force"))
+
+minetest.register_chatcommand("disable_all_vendors", {
+    description = "Toggle vendor inactivity.",
+    privs = {disable_vendor=true},
+    func = function(name, param)
+        if all_inactive_force then
+            all_inactive_force = false
+            modstorage:set_string("all_inactive_force", "false")
+        else
+            all_inactive_force = true
+            modstorage:set_string("all_inactive_force", "true")
+        end
+    end,
+})
 
 table.length = function(table)
     local length
@@ -85,7 +108,6 @@ if minetest.get_modpath("awards") then
         },
         icon = "copier.png",
     })
-
 
     awards.register_achievement("fancy_vend_trader",{
         title = "Trader",
@@ -225,6 +247,7 @@ local function reset_vendor_settings(pos)
         digiline_channel = "",
         co_sellers = "",
         banned_buyers = "",
+        auto_sort = false,
     }
     set_vendor_settings(pos, settings_default)
     return settings_default
@@ -236,6 +259,10 @@ local function get_vendor_settings(pos)
     if not settings then
         return reset_vendor_settings(pos)
     else
+        -- If settings added by newer versions of fancy_vend are nil then send defaults
+        if settings.auto_sort == nil then
+            settings.auto_sort = false
+        end
         return settings
     end
 end
@@ -281,6 +308,73 @@ local function can_access_vendor_inv(player, pos)
 end
 
 -- Inventory helpers:
+
+-- Function to sort inventory (Taken from technic_chests)
+local function sort_inventory(inv)
+    local inlist = inv:get_list("main")
+    local typecnt = {}
+    local typekeys = {}
+    for _, st in ipairs(inlist) do
+        if not st:is_empty() then
+            local n = st:get_name()
+            local w = st:get_wear()
+            local m = st:get_metadata()
+            local k = string.format("%s %05d %s", n, w, m)
+            if not typecnt[k] then
+                typecnt[k] = {
+                    name = n,
+                    wear = w,
+                    metadata = m,
+                    stack_max = st:get_stack_max(),
+                    count = 0,
+                }
+                table.insert(typekeys, k)
+            end
+            typecnt[k].count = typecnt[k].count + st:get_count()
+        end
+    end
+    table.sort(typekeys)
+    local outlist = {}
+    for _, k in ipairs(typekeys) do
+        local tc = typecnt[k]
+        while tc.count > 0 do
+            local c = math.min(tc.count, tc.stack_max)
+            table.insert(outlist, ItemStack({
+                name = tc.name,
+                wear = tc.wear,
+                metadata = tc.metadata,
+                count = c,
+            }))
+            tc.count = tc.count - c
+        end
+    end
+    if #outlist > #inlist then return end
+    while #outlist < #inlist do
+        table.insert(outlist, ItemStack(nil))
+    end
+    inv:set_list("main", outlist)
+end
+
+local function free_slots(inv, listname, itemname, quantity)
+    local size = inv:get_size(listname)
+    local free = 0
+    for i=1,size do
+        local stack = inv:get_stack(listname, i)
+        if stack:is_empty() or stack:get_free_space() > 0 then
+            if stack:is_empty() then
+                free = free + ItemStack(itemname):get_stack_max()
+            elseif stack:get_name() == itemname then
+                free = free + stack:get_free_space()
+            end
+        end
+    end
+    if free < quantity then
+        return false
+    else
+        return true
+    end
+end
+
 local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, input_eject)
     local stackmax = itemstack:get_stack_max()
     local stacks = {}
@@ -303,8 +397,9 @@ local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, i
         end
     end
 
-    -- Add to inventory or eject to pipeworks (whichever is applicable)
+    -- Add to inventory or eject to pipeworks/hoppers (whichever is applicable)
     local output_tube_connected = false
+    local output_hopper_connected = false
     if input_eject and pos then
         local pos_under = vector.new(pos)
         pos_under.y = pos_under.y - 1
@@ -312,12 +407,23 @@ local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, i
         if minetest.get_item_group(node_under.name, "tubedevice") > 0 then
             output_tube_connected = true
         end
+        if node_under.name == "hopper:hopper" or node_under.name == "hopper:hopper_side" then
+            output_hopper_connected = true
+        end
     end
     for i in pairs(stacks) do
-        if output_tube_connected and input_eject and pos then
+        if output_tube_connected then
             pipeworks.tube_inject_item(pos, pos, vector.new(0, -1, 0), stacks[i], minetest.get_meta(pos):get_string("owner"))
         else
-            inv:add_item(listname, ItemStack(stacks[i]))
+            local leftovers = ItemStack(stacks[i])
+            if output_hopper_connected then
+                local pos_under = {x = pos.x, y = pos.y-1, z = pos.z}
+                local hopper_inv = minetest.get_meta(pos_under):get_inventory()
+                leftovers = hopper_inv:add_item("main", leftovers)
+            end
+            if not leftovers:is_empty() then
+                inv:add_item(listname, leftovers)
+            end
         end
     end
 end
@@ -358,7 +464,9 @@ local function get_vendor_status(pos)
     local settings = get_vendor_settings(pos)
     local meta = minetest.get_meta(pos)
     local inv = meta:get_inventory()
-    if settings.input_item == "" or settings.output_item == "" then
+    if all_inactive_force then
+        return false, "all_inactive_force"
+    elseif settings.input_item == "" or settings.output_item == "" then
         return false, "unconfigured"
     elseif settings.inactive_force then
         return false, "inactive_force"
@@ -366,7 +474,7 @@ local function get_vendor_status(pos)
         return false, "no_privs"
     elseif not inv_contains_items(inv, "main", settings.output_item, settings.output_item_qty, settings.accept_worn_output) and not settings.admin_vendor then
         return false, "no_output"
-    elseif not inv:room_for_item("main", ItemStack(settings.input_item.." "..settings.input_item_qty)) and not settings.admin_vendor then
+    elseif not free_slots(inv, "main", settings.input_item, settings.input_item_qty) and not settings.admin_vendor then
         return false, "no_room"
     else
         return true
@@ -385,6 +493,8 @@ local function make_inactive_string(errorcode)
         status_str = status_str.." (no room)"
     elseif errorcode == "no_privs" then
         status_str = status_str.." (seller has insufficient privilages)"
+    elseif errorcode == "all_inactive_force" then
+        status_str = status_str.." (all vendors disabled temporarily by admin)"
     end
     return status_str
 end
@@ -407,8 +517,8 @@ local function run_inv_checks(pos, player, lots)
     -- Perform inventory checks
     ct.player_has, ct.player_item_table = inv_contains_items(player_inv, "main", settings.input_item, input_qty, settings.accept_worn_input)
     ct.vendor_has, ct.vendor_item_table = inv_contains_items(inv, "main", settings.output_item, output_qty, settings.accept_worn_output)
-    ct.player_fits = player_inv:room_for_item("main", ItemStack(settings.output_item.." "..output_qty))
-    ct.vendor_fits = inv:room_for_item("main", ItemStack(settings.input_item.." "..input_qty))
+    ct.player_fits = free_slots(inv, "main", settings.output_item, output_qty)
+    ct.vendor_fits = free_slots(inv, "main", settings.input_item, input_qty)
 
     if ct.player_has and ct.vendor_has and ct.player_fits and ct.vendor_fits then
         ct.overall = true
@@ -439,6 +549,10 @@ local function make_purchase(pos, player, lots)
     local inv = meta:get_inventory()
     local player_inv = player:get_inventory()
     local status, errorcode = get_vendor_status(pos)
+
+    -- Double check settings, vendors which were incorrectly set up before this bug fix won't matter anymore
+    settings.input_item_qty = math.abs(settings.input_item_qty)
+    settings.output_item_qty = math.abs(settings.output_item_qty)
 
     if status then
         -- Get input and output quantities after multiplying by lot count
@@ -577,7 +691,8 @@ local function get_vendor_settings_fs(pos)
         "checkbox[1,2.2;inactive_force;Force vendor into an inactive state.;"..bts(settings.inactive_force).."]"..
         "checkbox[1,2.6;depositor;Set this vendor to a Depositor.;"..bts(settings.depositor).."]"..
         "checkbox[1,3.0;accept_worn_output;Sell worn tools.;"..bts(settings.accept_worn_output).."]"..
-        "checkbox[5,3.0;accept_worn_input;Buy worn tools.;"..bts(settings.accept_worn_input).."]"
+        "checkbox[5,3.0;accept_worn_input;Buy worn tools.;"..bts(settings.accept_worn_input).."]"..
+        "checkbox[5,2.6;auto_sort;Automatically sort inventory.;"..bts(settings.auto_sort).."]"
 
     -- Admin vendor checkbox only if owner is admin
     local meta = minetest.get_meta(pos)
@@ -588,11 +703,14 @@ local function get_vendor_settings_fs(pos)
 
 
     -- Optional dependancy specific elements
-    if minetest.get_modpath("pipeworks") then
+    if minetest.get_modpath("pipeworks") or minetest.get_modpath("hopper") then
         checkboxes = checkboxes..
-            "checkbox[1,1.3;currency_eject;Eject incomming currency.;"..bts(settings.currency_eject).."]"..
+            "checkbox[1,1.7;currency_eject;Eject incomming currency.;"..bts(settings.currency_eject).."]"
+        if minetest.get_modpath("pipeworks") then
+            checkboxes = checkboxes..
             "checkbox[5,1.3;accept_output_only;Accept for-sale item only.;"..bts(settings.accept_output_only).."]"..
-            "checkbox[1,1.7;split_incoming_stacks;Split incomming stacks.;"..bts(settings.split_incoming_stacks).."]"
+            "checkbox[1,1.3;split_incoming_stacks;Split incomming stacks.;"..bts(settings.split_incoming_stacks).."]"
+        end
     end
 
     if minetest.get_modpath("digilines") then
@@ -614,8 +732,8 @@ local function get_vendor_default_fs(pos, player)
         "button[1,6.85;3,1;inv_tovendor;All To Vendor]"..
         "button[12,6.85;3,1;inv_fromvendor;All From Vendor]"..
         "button[1,8.08;3,1;inv_output_tovendor;Output To Vendor]"..
-        "button[12,8.08;3,1;inv_input_fromvendor;Input From Vendor]"
-
+        "button[12,8.08;3,1;inv_input_fromvendor;Input From Vendor]"..
+        "button[1,9.31;3,1;sort;Sort Inventory]"
 
     -- Add dynamic elements
     local pos_str = pos.x..","..pos.y..","..pos.z
@@ -825,6 +943,10 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
                 settings[i] = stb(fields[i])
             end
         end
+        -- Make sure item values are positive
+        settings.input_item_qty = math.abs(settings.input_item_qty)
+        settings.output_item_qty = math.abs(settings.output_item_qty)
+
         -- Check number-only fields contain only numbers
         if not tonumber(settings.input_item_qty) then
             settings.input_item_qty = 1
@@ -856,7 +978,14 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
     end
 
     if fields.quit then
+        if can_access_vendor_inv(player, pos) and settings.auto_sort then
+            sort_inventory(inv)
+        end
         return true
+    end
+
+    if fields.sort and can_access_vendor_inv(player, pos) then
+        sort_inventory(inv)
     end
 
     if fields.buy then
@@ -1180,6 +1309,17 @@ minetest.register_craft({
         { "default:gold_ingot","default:chest_locked","default:gold_ingot"},
     }
 })
+
+-- Hopper support
+if minetest.get_modpath("hopper") then
+    hopper:add_container({
+        {"side", "fancy_vend:player_vendor", "main"}
+    })
+
+    hopper:add_container({
+        {"side", "fancy_vend:player_depo", "main"}
+    })
+end
 
 
 ---------------
