@@ -132,6 +132,8 @@ local settings_default = {
 }
 ```
 
+Fancy Vendors and Fancy Vendor Display Nodes conduct digiline signals also.
+
 This feature could theoretically make rewards-based shops feasable.
 
 ## Upgrading vendors
