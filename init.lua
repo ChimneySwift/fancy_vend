@@ -23,7 +23,15 @@ local drop_vendor = "fancy_vend:player_vendor"
 local display_node_def = table.copy(minetest.registered_nodes[display_node])
 display_node_def.drop = ""
 display_node_def.groups.not_in_creative_inventory = 1
+display_node_def.description = "Fancy Vendor Display Node (you hacker you!)"
+display_node_def.digiline = {
+    wire = {
+            rules = pipeworks.digilines_rules
+        }
+    }
 minetest.register_node("fancy_vend:display_node", display_node_def)
+
+-- Craftitem to display when vendor is inactive (Use just image for this???)
 minetest.register_craftitem("fancy_vend:inactive",{inventory_image = "inactive.png",})
 
 minetest.register_privilege("admin_vendor", "Enables the user to set regular vendors to admin vendors.")
@@ -1170,7 +1178,10 @@ local vendor_template = {
         receptor = {},
         effector = {
             action = function() end
-        }
+        },
+        wire = {
+            rules = pipeworks.digilines_rules
+        },
     },
     tube = {
         input_inventory = "main",
