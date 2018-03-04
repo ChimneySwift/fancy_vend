@@ -915,7 +915,7 @@ local function move_inv(frominv, toinv, filter)
     for i, v in ipairs(frominv:get_list("main") or {}) do
         if v:get_name() == filter or not filter then
             if toinv:room_for_item("main", v) then
-                leftover = toinv:add_item("main", v)
+                local leftover = toinv:add_item("main", v)
 
                 frominv:remove_item("main", v)
 
