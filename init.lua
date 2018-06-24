@@ -667,7 +667,8 @@ local function get_vendor_settings_fs(pos)
         "item_image_button[0,2.3;1,1;default:book;button_log;]"..
         "list[current_player;main;1,4.85;8,1;]"..
         "list[current_player;main;1,6.08;8,3;8]"..
-        "listring[current_player;main]"
+        "listring[current_player;main]"..
+        "button_exit[0,8;1,1;btn_exit;X]"
 
     -- Add dynamic elements
     local pos_str = pos.x..","..pos.y..","..pos.z
@@ -741,7 +742,8 @@ local function get_vendor_default_fs(pos, player)
         "button[12,6.85;3,1;inv_fromvendor;All From Vendor]"..
         "button[1,8.08;3,1;inv_output_tovendor;Output To Vendor]"..
         "button[12,8.08;3,1;inv_input_fromvendor;Input From Vendor]"..
-        "button[1,9.31;3,1;sort;Sort Inventory]"
+        "button[1,9.31;3,1;sort;Sort Inventory]"..
+        "button_exit[0,10;1,1;btn_exit;X]"
 
     -- Add dynamic elements
     local pos_str = pos.x..","..pos.y..","..pos.z
@@ -768,7 +770,8 @@ end
 local function get_vendor_log_fs(pos)
     local base = "size[9,9]"..
         "image_button[0,1.3;1,1;debug_btn.png;button_settings;]"..
-        "item_image[0,2.3;1,1;default:book]"
+        "item_image[0,2.3;1,1;default:book]"..
+        "button_exit[0,8;1,1;btn_exit;X]"
 
     -- Add dynamic elements
     local meta = minetest.get_meta(pos)
