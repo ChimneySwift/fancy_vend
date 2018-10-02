@@ -24,11 +24,13 @@ local display_node_def = table.copy(minetest.registered_nodes[display_node])
 display_node_def.drop = ""
 display_node_def.groups.not_in_creative_inventory = 1
 display_node_def.description = "Fancy Vendor Display Node (you hacker you!)"
-display_node_def.digiline = {
-    wire = {
+if pipeworks then
+    display_node_def.digiline = {
+        wire = {
             rules = pipeworks.digilines_rules
         }
     }
+end
 minetest.register_node("fancy_vend:display_node", display_node_def)
 
 -- Craftitem to display when vendor is inactive (Use just image for this???)
@@ -1177,15 +1179,6 @@ local vendor_template = {
             end
         end
     end,
-    digiline = {
-        receptor = {},
-        effector = {
-            action = function() end
-        },
-        wire = {
-            rules = pipeworks.digilines_rules
-        },
-    },
     tube = {
         input_inventory = "main",
         connect_sides = {left = 1, right = 1, back = 1, bottom = 1},
@@ -1278,6 +1271,18 @@ local vendor_template = {
         -- TNT immunity
     end,
 }
+
+if pipeworks then
+    vendor_template.digiline = {
+        receptor = {},
+        effector = {
+        action = function() end
+        },
+        wire = {
+        rules = pipeworks.digilines_rules
+        },
+    }
+end
 
 local player_vendor = table.copy(vendor_template)
 player_vendor.tiles = {
