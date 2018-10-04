@@ -24,11 +24,13 @@ local display_node_def = table.copy(minetest.registered_nodes[display_node])
 display_node_def.drop = ""
 display_node_def.groups.not_in_creative_inventory = 1
 display_node_def.description = "Fancy Vendor Display Node (you hacker you!)"
-display_node_def.digiline = {
-    wire = {
+if pipeworks then
+    display_node_def.digiline = {
+        wire = {
             rules = pipeworks.digilines_rules
         }
     }
+end
 minetest.register_node("fancy_vend:display_node", display_node_def)
 
 -- Craftitem to display when vendor is inactive (Use just image for this???)
@@ -668,7 +670,7 @@ local function get_vendor_settings_fs(pos)
         "list[current_player;main;1,4.85;8,1;]"..
         "list[current_player;main;1,6.08;8,3;8]"..
         "listring[current_player;main]"..
-        "button_exit[0,8;1,1;btn_exit;X]"
+        "button_exit[0,8;1,1;btn_exit;Done]"
 
     -- Add dynamic elements
     local pos_str = pos.x..","..pos.y..","..pos.z
@@ -743,7 +745,7 @@ local function get_vendor_default_fs(pos, player)
         "button[1,8.08;3,1;inv_output_tovendor;Output To Vendor]"..
         "button[12,8.08;3,1;inv_input_fromvendor;Input From Vendor]"..
         "button[1,9.31;3,1;sort;Sort Inventory]"..
-        "button_exit[0,10;1,1;btn_exit;X]"
+        "button_exit[0,10;1,1;btn_exit;Done]"
 
     -- Add dynamic elements
     local pos_str = pos.x..","..pos.y..","..pos.z
@@ -771,7 +773,7 @@ local function get_vendor_log_fs(pos)
     local base = "size[9,9]"..
         "image_button[0,1.3;1,1;debug_btn.png;button_settings;]"..
         "item_image[0,2.3;1,1;default:book]"..
-        "button_exit[0,8;1,1;btn_exit;X]"
+        "button_exit[0,8;1,1;btn_exit;Done]"
 
     -- Add dynamic elements
     local meta = minetest.get_meta(pos)
@@ -1177,15 +1179,6 @@ local vendor_template = {
             end
         end
     end,
-    digiline = {
-        receptor = {},
-        effector = {
-            action = function() end
-        },
-        wire = {
-            rules = pipeworks.digilines_rules
-        },
-    },
     tube = {
         input_inventory = "main",
         connect_sides = {left = 1, right = 1, back = 1, bottom = 1},
@@ -1278,6 +1271,18 @@ local vendor_template = {
         -- TNT immunity
     end,
 }
+
+if pipeworks then
+    vendor_template.digiline = {
+        receptor = {},
+        effector = {
+        action = function() end
+        },
+        wire = {
+        rules = pipeworks.digilines_rules
+        },
+    }
+end
 
 local player_vendor = table.copy(vendor_template)
 player_vendor.tiles = {
