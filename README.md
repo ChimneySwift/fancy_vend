@@ -13,11 +13,11 @@ There are many vendor mods for Minetest, but most have too few options, lack sup
 
 **Dependencies:** default
 
-**Optional Dependencies:** [pipeworks](https://github.com/minetest-mods/pipeworks), [digilines](https://github.com/minetest-mods/digilines), [awards](https://github.com/minetest-mods/awards)
+**Optional Dependencies:** [pipeworks](https://github.com/minetest-mods/pipeworks), [digilines](https://github.com/minetest-mods/digilines), [awards](https://github.com/minetest-mods/awards), [email](https://github.com/rubenwardy/email), [tell](https://github.com/octacian/tell), [mail](https://cheapiesystems.com/git/mail/)
 
 **Contributors:** Many thanks to LadyK for the textures, patience and ideas.
 
-**Note:** **This mod is still a WIP**, while the currently available version has been tested to try and limit the possibility of bugs, there are no guarentees. Please install this mod with care and report any possible issues ASAP so they can be resolved. Thank you for your cooperation, we hope you enjoy Fancy Vend and look forward to hearing your suggestions for improvement.
+**Note:** While this mod is still a WIP and you should use it with caution, it has been tested for some time on several worlds with no problems.
 
 ## Crafting and basic configuration
 A fancy vendor can be crafted as follows:
@@ -135,6 +135,19 @@ local settings_default = {
 Fancy Vendors and Fancy Vendor Display Nodes conduct digiline signals also.
 
 This feature could theoretically make rewards-based shops feasable.
+
+## Out Of Stock Mail
+This mod integrates with several mail mods in order to alert shop owners when their shops lose stock. If multiple mods are in use, only one will be used to send the message. The order of which is:
+
+- Email By Rubenwardy
+- Mail By Cheapie
+- Tell By Octacian
+
+### Mail
+When a vendor empties, the mod sends mail telling them that their vendor is out of stock. In the event another mod empties, the previous message will be edited so as to avoid flooding their inbox if they have many vendors.
+
+### Tell & Email
+As there is no tidy way of sending very long messages with these mods, messages will simply be sent whenever a vendor goes out of stock.
 
 ## Upgrading vendors
 

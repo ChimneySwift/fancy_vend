@@ -12,10 +12,12 @@
 --
 -- A full-featured, fully-integrated vendor mod for Minetest
 
+local settings = minetest.settings
 
-local display_node = (minetest.setting_get("fancy_vend_display_node") or "default:obsidian_glass")
-local max_logs = (tonumber(minetest.setting_get("fancy_vend_log_max")) or 40)
-local autorotate_speed = (tonumber(minetest.setting_get("fancy_vend_autorotate_speed")) or 1)
+local display_node = (settings:get("fancy_vend.display_node") or "default:obsidian_glass")
+local max_logs = (tonumber(settings:get("fancy_vend.log_max")) or 40)
+local autorotate_speed = (tonumber(settings:get("fancy_vend.autorotate_speed")) or 1)
+local no_alerts = settings:get_bool("fancy_vend.no_alerts")
 
 local drop_vendor = "fancy_vend:player_vendor"
 
@@ -509,8 +511,72 @@ local function make_inactive_string(errorcode)
     return status_str
 end
 
--- adminstacks - inv insert issue
--- wear - invcheck and inv get and insert issue
+-- Various email and tell mod support
+
+-- This function takes the position of a vendor and alerts the owner if it has just been emptied
+local email_loaded, tell_loaded, mail_loaded = minetest.get_modpath("email"), minetest.get_modpath("tell"), minetest.get_modpath("mail")
+local function alert_owner_if_empty(pos)
+    if no_alerts then return end
+
+    local meta = minetest.get_meta(pos)
+    local settings = get_vendor_settings(pos)
+    local owner = meta:get_string("owner")
+    local alerted = stb(meta:get_string("alerted") or "false") -- check
+    local status, errorcode = get_vendor_status(pos)
+
+    -- Message to send
+    local stock_msg = "Your vendor trading "..settings.input_item_qty.." "..minetest.registered_items[settings.input_item].description.." for "..settings.output_item_qty.." "..minetest.registered_items[settings.output_item].description.." at position "..minetest.pos_to_string(pos, 0).." has just run out of stock."
+
+    if not alerted and not status and errorcode == "no_output" then
+        -- Rubenwardy's Email Mod: https://github.com/rubenwardy/email
+        if mail_loaded then
+            -- cheapie's mail mod https://cheapiesystems.com/git/mail/
+            if not mail.messages[owner] then mail.messages[owner] = {} end
+            local inbox = mail.messages[owner]
+
+            -- Instead of filling their inbox with mail, get the last message sent by "Fancy Vend" and append to the message
+            -- If there is no last message, then create a new one
+
+            local message
+            for i, msg in pairs(inbox) do
+                if msg.sender == "Fancy Vend" then -- Put a space in the name to avoid impersonation
+                    message = msg
+                end
+            end
+
+            if message then
+                -- Set the message as unread
+                message.unread = true
+
+                -- Append to the end
+                message.body = message.body..stock_msg.."\n"
+            else
+                mail.send("Fancy Vend", owner, "You have unstocked vendors!", stock_msg.."\n")
+            end
+
+            mail.save()
+
+            meta:set_string("alerted", "true")
+
+            return
+
+        elseif email_loaded then
+            email.send_mail("Fancy Vend", owner, stock_msg)
+
+            meta:set_string("alerted", "true")
+
+            return
+
+        elseif tell_loaded then
+            -- octacians tell mod https://github.com/octacian/tell
+            tell.add(owner, "Fancy Vend", stock_msg)
+
+            meta:set_string("alerted", "true")
+
+            return
+        end
+    end
+end
 
 local function run_inv_checks(pos, player, lots)
     local settings = get_vendor_settings(pos)
@@ -593,6 +659,9 @@ local function make_purchase(pos, player, lots)
                         inv_remove(player_inv, "main", ct.player_item_table, settings.input_item, input_qty)
                         inv_insert(player_inv, "main", ItemStack(settings.output_item), output_qty, ct.vendor_item_table)
                         inv_insert(inv, "main", ItemStack(settings.input_item), input_qty, ct.player_item_table, pos, (minetest.get_modpath("pipeworks") and settings.currency_eject))
+
+                        -- Run mail mod checks
+                        alert_owner_if_empty(pos)
 
                         return true, "Trade successful"
                     else
@@ -859,6 +928,9 @@ local function refresh_vendor(pos)
     local status, errorcode = get_vendor_status(pos)
     local correct_vendor = get_correct_vendor(settings)
 
+    if status or errorcode ~= "no_output" then
+        meta:set_string("alerted", "false")
+    end
 
     if status then
         meta:set_string("infotext", (settings.admin_vendor and "Admin" or "Player").." Vendor trading "..settings.input_item_qty.." "..minetest.registered_items[settings.input_item].description.." for "..settings.output_item_qty.." "..minetest.registered_items[settings.output_item].description.." (owned by " .. meta:get_string("owner") .. ")")
