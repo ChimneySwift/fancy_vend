@@ -277,8 +277,8 @@ local function get_vendor_settings(pos)
         end
 
         -- Sanitatize number values (backwards compat)
-        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 0)
-        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 0)
+        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 1)
+        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 1)
         return settings
     end
 end
@@ -1033,8 +1033,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
             end
         end
         -- Make sure item values are positive integers
-        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 0)
-        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 0)
+        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 1)
+        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 1)
 
         -- Check number-only fields contain only numbers
         if not tonumber(settings.input_item_qty) then
