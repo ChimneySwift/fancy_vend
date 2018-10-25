@@ -275,6 +275,10 @@ local function get_vendor_settings(pos)
         if settings.auto_sort == nil then
             settings.auto_sort = false
         end
+
+        -- Sanitatize number values (backwards compat)
+        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 0)
+        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 0)
         return settings
     end
 end
@@ -1028,9 +1032,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
                 settings[i] = stb(fields[i])
             end
         end
-        -- Make sure item values are positive
-        settings.input_item_qty = math.abs(settings.input_item_qty)
-        settings.output_item_qty = math.abs(settings.output_item_qty)
+        -- Make sure item values are positive integers
+        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 0)
+        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 0)
 
         -- Check number-only fields contain only numbers
         if not tonumber(settings.input_item_qty) then
