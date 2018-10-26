@@ -1032,20 +1032,17 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
                 settings[i] = stb(fields[i])
             end
         end
-        -- Make sure item values are positive integers
-        settings.input_item_qty = (type(settings.input_item_qty) == "number" and math.abs(settings.input_item_qty) or 1)
-        settings.output_item_qty = (type(settings.output_item_qty) == "number" and math.abs(settings.output_item_qty) or 1)
 
         -- Check number-only fields contain only numbers
         if not tonumber(settings.input_item_qty) then
             settings.input_item_qty = 1
         else
-            settings.input_item_qty = math.floor(tonumber(settings.input_item_qty))
+            settings.input_item_qty = math.floor(math.abs(tonumber(settings.input_item_qty)))
         end
         if not tonumber(settings.output_item_qty) then
             settings.output_item_qty = 1
         else
-            settings.output_item_qty = math.floor(tonumber(settings.output_item_qty))
+            settings.output_item_qty = math.floor(math.abs(tonumber(settings.output_item_qty)))
         end
 
         -- Check item quantities aren't too high (which could lead to additional processing for no reason), if so, set it to the maximum the player inventory can handle
