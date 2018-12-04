@@ -99,7 +99,7 @@ end
 
 -- Awards
 if minetest.get_modpath("awards") then
-    awards.register_achievement("fancy_vend_getting_fancy",{
+    awards.register_award("fancy_vend:getting_fancy",{
         title = "Getting Fancy",
         description = "Craft a fancy vendor.",
         trigger = {
@@ -110,7 +110,7 @@ if minetest.get_modpath("awards") then
         icon = "player_vend_front.png^awards_level1.png",
     })
 
-    awards.register_achievement("fancy_vend_wizard",{
+    awards.register_award("fancy_vend:wizard",{
         title = "You're a Wizard",
         description = "Craft a copy tool.",
         trigger = {
@@ -121,32 +121,32 @@ if minetest.get_modpath("awards") then
         icon = "copier.png",
     })
 
-    awards.register_achievement("fancy_vend_trader",{
+    awards.register_award("fancy_vend:trader",{
         title = "Trader",
         description = "Configure a depositor.",
         icon = "player_depo_front.png",
     })
-    awards.register_achievement("fancy_vend_seller",{
+    awards.register_award("fancy_vend:seller",{
         title = "Seller",
         description = "Configure a vendor.",
         icon = "player_vend_front.png^awards_level2.png",
     })
-    awards.register_achievement("fancy_vend_shop_keeper",{
+    awards.register_award("fancy_vend:shop_keeper",{
         title = "Shop Keeper",
         description = "Configure 10 vendors or depositors.",
         icon = "player_vend_front.png^awards_level3.png",
     })
-    awards.register_achievement("fancy_vend_merchant",{
+    awards.register_award("fancy_vend:merchant",{
         title = "Merchant",
         description = "Configure 25 vendors or depositors.",
         icon = "player_vend_front.png^awards_level4.png",
     })
-    awards.register_achievement("fancy_vend_super_merchant",{
+    awards.register_award("fancy_vend:super_merchant",{
         title = "Super Merchant",
         description = "Configure 100 vendors or depositors. How do you even have this much stuff to sell?",
         icon = "player_vend_front.png^awards_level5.png",
     })
-    awards.register_achievement("fancy_vend_god_merchant",{
+    awards.register_award("fancy_vend:god_merchant",{
         title = "God Merchant",
         description = "Configure 9001 vendors or depositors. Ok wot.",
         icon = "player_vend_front.png^awards_level6.png",
@@ -948,22 +948,22 @@ local function refresh_vendor(pos)
                 awards.increment_item_counter(data, "fancy_vend_configure", correct_vendor)
 
                 if awards.get_item_count(data, "fancy_vend_configure", "fancy_vend:player_vendor") >= 1 then
-                    awards.unlock(name, "fancy_vend_seller")
+                    awards.unlock(name, "fancy_vend:seller")
                 end
                 if awards.get_item_count(data, "fancy_vend_configure", "fancy_vend:player_depo") >= 1 then
-                    awards.unlock(name, "fancy_vend_trader")
+                    awards.unlock(name, "fancy_vend:trader")
                 end
                 if awards.get_total_item_count(data, "fancy_vend_configure") >= 10 then
-                    awards.unlock(name, "fancy_vend_shop_keeper")
+                    awards.unlock(name, "fancy_vend:shop_keeper")
                 end
                 if awards.get_total_item_count(data, "fancy_vend_configure") >= 25 then
-                    awards.unlock(name, "fancy_vend_merchant")
+                    awards.unlock(name, "fancy_vend:merchant")
                 end
                 if awards.get_total_item_count(data, "fancy_vend_configure") >= 100 then
-                    awards.unlock(name, "fancy_vend_super_merchant")
+                    awards.unlock(name, "fancy_vend:super_merchant")
                 end
                 if awards.get_total_item_count(data, "fancy_vend_configure") >= 9001 then
-                    awards.unlock(name, "fancy_vend_god_merchant")
+                    awards.unlock(name, "fancy_vend:god_merchant")
                 end
             end
         end
