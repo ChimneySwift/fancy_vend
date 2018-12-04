@@ -943,9 +943,20 @@ local function refresh_vendor(pos)
             meta:set_string("configured", "true")
             if minetest.get_modpath("awards") then
                 local name = meta:get_string("owner")
-                local data = awards.players[name]
+                local data = awards.player(name)
+
+                -- Ensure fancy_vend_configure table is in data
+                if not data.fancy_vend_configure then
+                    data.fancy_vend_configure = {}
+                end
 
                 awards.increment_item_counter(data, "fancy_vend_configure", correct_vendor)
+
+                total_item_count = 0
+
+                for k, v in pairs(data.fancy_vend_configure) do
+                    total_item_count = total_item_count + v
+                end
 
                 if awards.get_item_count(data, "fancy_vend_configure", "fancy_vend:player_vendor") >= 1 then
                     awards.unlock(name, "fancy_vend:seller")
@@ -953,16 +964,16 @@ local function refresh_vendor(pos)
                 if awards.get_item_count(data, "fancy_vend_configure", "fancy_vend:player_depo") >= 1 then
                     awards.unlock(name, "fancy_vend:trader")
                 end
-                if awards.get_total_item_count(data, "fancy_vend_configure") >= 10 then
+                if total_item_count >= 10 then
                     awards.unlock(name, "fancy_vend:shop_keeper")
                 end
-                if awards.get_total_item_count(data, "fancy_vend_configure") >= 25 then
+                if total_item_count >= 25 then
                     awards.unlock(name, "fancy_vend:merchant")
                 end
-                if awards.get_total_item_count(data, "fancy_vend_configure") >= 100 then
+                if total_item_count >= 100 then
                     awards.unlock(name, "fancy_vend:super_merchant")
                 end
-                if awards.get_total_item_count(data, "fancy_vend_configure") >= 9001 then
+                if total_item_count >= 9001 then
                     awards.unlock(name, "fancy_vend:god_merchant")
                 end
             end
