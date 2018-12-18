@@ -405,7 +405,7 @@ local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, i
     table.insert(stacks, {name = itemstack:get_name(), count = remaining_quantity})
 
     -- If tool add wears and metadatas, ignores if from_table = nil (eg, due to vendor beig admin vendor)
-    if minetest.registered_tools[itemstack:get_name()] then
+    if minetest.registered_tools[itemstack:get_name()] and from_table then
         for i in pairs(stacks) do
             local from_item_table = from_table[i].item:to_table()
             stacks[i].wear = from_item_table.wear
