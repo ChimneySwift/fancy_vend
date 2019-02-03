@@ -1087,6 +1087,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
     if fields.buy then
         local lots = math.floor(tonumber(fields.lot_count) or 1)
+	-- prevent negative numbers
+	lots = math.max(lots, 1)
         local success, message = make_purchase(pos, player, lots)
         if success then
             -- Add to vendor logs
