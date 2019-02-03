@@ -740,6 +740,7 @@ local function get_vendor_settings_fs(pos)
         "label[6.8,0.5;Output item]"..
         "image[0,1.3;1,1;debug_btn.png]"..
         "item_image_button[0,2.3;1,1;default:book;button_log;]"..
+        "item_image_button[0,3.3;1,1;default:gold_ingot;button_buy;]"..
         "list[current_player;main;1,4.85;8,1;]"..
         "list[current_player;main;1,6.08;8,3;8]"..
         "listring[current_player;main]"..
@@ -789,11 +790,11 @@ local function get_vendor_settings_fs(pos)
     -- Optional dependancy specific elements
     if minetest.get_modpath("pipeworks") or minetest.get_modpath("hopper") then
         checkboxes = checkboxes..
-            "checkbox[1,1.7;currency_eject;Eject incomming currency.;"..bts(settings.currency_eject).."]"
+            "checkbox[1,1.7;currency_eject;Eject incoming currency.;"..bts(settings.currency_eject).."]"
         if minetest.get_modpath("pipeworks") then
             checkboxes = checkboxes..
             "checkbox[5,1.3;accept_output_only;Accept for-sale item only.;"..bts(settings.accept_output_only).."]"..
-            "checkbox[1,1.3;split_incoming_stacks;Split incomming stacks.;"..bts(settings.split_incoming_stacks).."]"
+            "checkbox[1,1.3;split_incoming_stacks;Split incoming stacks.;"..bts(settings.split_incoming_stacks).."]"
         end
     end
 
@@ -830,11 +831,13 @@ local function get_vendor_default_fs(pos, player)
     if can_modify_vendor(pos, player) then
         settings_btn =
         "image_button[0,1.3;1,1;debug_btn.png;button_settings;]"..
-        "item_image_button[0,2.3;1,1;default:book;button_log;]"
+        "item_image_button[0,2.3;1,1;default:book;button_log;]"..
+        "item_image_button[0,3.3;1,1;default:gold_ingot;button_buy;]"
     else
         settings_btn =
         "image[0,1.3;1,1;debug_btn.png]"..
-        "item_image[0,2.3;1,1;default:book]"
+        "item_image[0,2.3;1,1;default:book]"..
+        "item_image[0,3.3;1,1;default:gold_ingot;button_buy;]"
     end
 
     local fs = base..inv_lists..settings_btn
@@ -846,6 +849,7 @@ local function get_vendor_log_fs(pos)
     local base = "size[9,9]"..
         "image_button[0,1.3;1,1;debug_btn.png;button_settings;]"..
         "item_image[0,2.3;1,1;default:book]"..
+        "item_image_button[0,3.3;1,1;default:gold_ingot;button_buy;]"..
         "button_exit[0,8;1,1;btn_exit;Done]"
 
     -- Add dynamic elements
@@ -868,6 +872,9 @@ local function get_vendor_log_fs(pos)
     return fs
 end
 
+local function show_buyer_formspec(player, pos)
+    minetest.show_formspec(player:get_player_name(), "fancy_vend:buyer;"..minetest.pos_to_string(pos), get_vendor_buyer_fs(pos, player, nil))
+end
 
 local function show_vendor_formspec(player, pos)
     local settings = get_vendor_settings(pos)
@@ -879,7 +886,7 @@ local function show_vendor_formspec(player, pos)
             minetest.show_formspec(player:get_player_name(), "fancy_vend:default;"..minetest.pos_to_string(pos), get_vendor_default_fs(pos, player))
         end
     else
-        minetest.show_formspec(player:get_player_name(), "fancy_vend:buyer;"..minetest.pos_to_string(pos), get_vendor_buyer_fs(pos, player, nil))
+        show_buyer_formspec(player, pos)
     end
 end
 
@@ -1150,6 +1157,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
         return
     elseif fields.button_inv then
         minetest.show_formspec(player:get_player_name(), "fancy_vend:default;"..minetest.pos_to_string(pos), get_vendor_default_fs(pos, player))
+        return
+    elseif fields.button_buy then
+        minetest.show_formspec(player:get_player_name(), "fancy_vend:buyer;"..minetest.pos_to_string(pos), get_vendor_buyer_fs(pos, player, (tonumber(fields.lot_count) or 1)))
         return
     end
 
