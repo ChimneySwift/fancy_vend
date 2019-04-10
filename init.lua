@@ -534,9 +534,19 @@ local function alert_owner_if_empty(pos)
     if not alerted and not status and errorcode == "no_output" then
         -- Rubenwardy's Email Mod: https://github.com/rubenwardy/email
         if mail_loaded then
-            -- cheapie's mail mod https://cheapiesystems.com/git/mail/
-            if not mail.messages[owner] then mail.messages[owner] = {} end
-            local inbox = mail.messages[owner]
+            local inbox = {}
+
+            -- load messages
+            if not mail.apiversion then
+              -- cheapie's mail mod https://cheapiesystems.com/git/mail/
+              if not mail.messages[owner] then mail.messages[owner] = {} end
+              inbox = mail.messages[owner]
+
+            elseif mail.apiversion >= 1.1 then
+              -- webmail fork https://github.com/thomasrudin-mt/mail (per player storage)
+              inbox = mail.getMessages(owner)
+
+            end
 
             -- Instead of filling their inbox with mail, get the last message sent by "Fancy Vend" and append to the message
             -- If there is no last message, then create a new one
@@ -558,7 +568,16 @@ local function alert_owner_if_empty(pos)
                 mail.send("Fancy Vend", owner, "You have unstocked vendors!", stock_msg.."\n")
             end
 
-            mail.save()
+            -- save messages
+            if not mail.apiversion then
+              -- cheapie's mail mod https://cheapiesystems.com/git/mail/
+              mail.save()
+
+            elseif mail.apiversion >= 1.1 then
+              -- webmail fork https://github.com/thomasrudin-mt/mail
+              mail.setMessages(owner, inbox)
+
+            end
 
             meta:set_string("alerted", "true")
 
