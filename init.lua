@@ -405,12 +405,21 @@ local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, i
     -- Add the remaining stack to the list
     table.insert(stacks, {name = itemstack:get_name(), count = remaining_quantity})
 
-    -- If tool add wears and metadatas, ignores if from_table = nil (eg, due to vendor beig admin vendor)
+   -- If tool add wears ignores if from_table = nil (eg, due to vendor beig admin vendor)
     if minetest.registered_tools[itemstack:get_name()] and from_table then
         for i in pairs(stacks) do
             local from_item_table = from_table[i].item:to_table()
             stacks[i].wear = from_item_table.wear
-            stacks[i].metadata = from_item_table.metadata
+        end
+    end
+
+    -- if has metadata add metadata
+    if from_table then
+        for i in pairs(stacks) do
+            local from_item_table = from_table[i].item:to_table()
+            if from_item_table.metadata then
+                stacks[i].metadata = from_item_table.metadata
+            end
         end
     end
 
