@@ -24,6 +24,7 @@ local drop_vendor = "fancy_vend:player_vendor"
 -- Register a copy of the display node with no drops to make players separating the obsidian glass with something like a piston a non-issue.
 local display_node_def = table.copy(minetest.registered_nodes[display_node])
 display_node_def.drop = ""
+display_node_def.pointable = false
 display_node_def.groups.not_in_creative_inventory = 1
 display_node_def.description = "Fancy Vendor Display Node (you hacker you!)"
 if pipeworks then
