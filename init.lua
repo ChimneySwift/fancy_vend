@@ -222,19 +222,17 @@ local function update_item(pos, node)
     end
 end
 
--- ABM to refresh entities after clearobjects
-minetest.register_abm({
+-- LBM to refresh entities after clearobjects
+minetest.register_lbm({
+    label = "Refresh vendor display",
+    name = "fancy_vend:display_refresh",
     nodenames = {"fancy_vend:display_node"},
-    interval = 60,
-    chance = 1,
-    action = function(pos, node, active_object_count, active_object_count_wider)
-        local num
-
-        num = #minetest.get_objects_inside_radius(pos, 0.5)
-        pos.y = pos.y - 1
-
-        if num > 0 then return end
-        update_item(pos, node)
+    run_at_every_load = true,
+    action = function(pos, node)
+        if not next(minetest.get_objects_inside_radius(pos, 0.5)) then
+            pos.y = pos.y - 1
+            update_item(pos, node)
+        end
     end
 })
 
