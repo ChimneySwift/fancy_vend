@@ -24,8 +24,8 @@ local drop_vendor = "fancy_vend:player_vendor"
 -- Register a copy of the display node with no drops to make players separating the obsidian glass with something like a piston a non-issue.
 local display_node_def = table.copy(minetest.registered_nodes[display_node])
 display_node_def.drop = ""
-display_node_def.groups.not_in_creative_inventory = 1
 display_node_def.pointable = false
+display_node_def.groups.not_in_creative_inventory = 1
 display_node_def.description = "Fancy Vendor Display Node (you hacker you!)"
 if pipeworks then
     display_node_def.digiline = {
@@ -406,7 +406,7 @@ local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, i
     -- Add the remaining stack to the list
     table.insert(stacks, {name = name, count = remaining_quantity})
 
-    -- If tool add wears ignores if from_table = nil (eg, due to vendor beig admin vendor)
+   -- If tool add wears ignores if from_table = nil (eg, due to vendor beig admin vendor)
     if minetest.registered_tools[name] and from_table then
         for i in pairs(stacks) do
             local from_item_table = from_table[i].item:to_table()
@@ -545,14 +545,24 @@ local function alert_owner_if_empty(pos)
     local status, errorcode = get_vendor_status(pos)
 
     -- Message to send
-    local stock_msg = "Your vendor trading "..settings.input_item_qty.." "..minetest.registered_items[settings.input_item].description.." for "..settings.output_item_qty.." "..minetest.registered_items[settings.output_item].description.." at position "..minetest.pos_to_string(pos, 0).." has just run out of stock or has an error."
+    local stock_msg = "Your vendor trading "..settings.input_item_qty.." "..minetest.registered_items[settings.input_item].description.." for "..settings.output_item_qty.." "..minetest.registered_items[settings.output_item].description.." at position "..minetest.pos_to_string(pos, 0).." has just run out of stock."
 
     if not alerted and not status and errorcode == "no_output" then
         -- Rubenwardy's Email Mod: https://github.com/rubenwardy/email
         if mail_loaded then
-            -- cheapie's mail mod https://cheapiesystems.com/git/mail/
-            if not mail.messages[owner] then mail.messages[owner] = {} end
-            local inbox = mail.messages[owner]
+            local inbox = {}
+
+            -- load messages
+            if not mail.apiversion then
+              -- cheapie's mail mod https://cheapiesystems.com/git/mail/
+              if not mail.messages[owner] then mail.messages[owner] = {} end
+              inbox = mail.messages[owner]
+
+            elseif mail.apiversion >= 1.1 then
+              -- webmail fork https://github.com/thomasrudin-mt/mail (per player storage)
+              inbox = mail.getMessages(owner)
+
+            end
 
             -- Instead of filling their inbox with mail, get the last message sent by "Fancy Vend" and append to the message
             -- If there is no last message, then create a new one
@@ -574,7 +584,16 @@ local function alert_owner_if_empty(pos)
                 mail.send("Fancy Vend", owner, "You have unstocked vendors!", stock_msg.."\n")
             end
 
-            mail.save()
+            -- save messages
+            if not mail.apiversion then
+              -- cheapie's mail mod https://cheapiesystems.com/git/mail/
+              mail.save()
+
+            elseif mail.apiversion >= 1.1 then
+              -- webmail fork https://github.com/thomasrudin-mt/mail
+              mail.setMessages(owner, inbox)
+
+            end
 
             meta:set_string("alerted", "true")
 
@@ -756,6 +775,7 @@ local function get_vendor_settings_fs(pos)
         "label[6.8,0.5;Output item]"..
         "image[0,1.3;1,1;debug_btn.png]"..
         "item_image_button[0,2.3;1,1;default:book;button_log;]"..
+        "item_image_button[0,3.3;1,1;default:gold_ingot;button_buy;]"..
         "list[current_player;main;1,4.85;8,1;]"..
         "list[current_player;main;1,6.08;8,3;8]"..
         "listring[current_player;main]"..
@@ -805,11 +825,11 @@ local function get_vendor_settings_fs(pos)
     -- Optional dependancy specific elements
     if minetest.get_modpath("pipeworks") or minetest.get_modpath("hopper") then
         checkboxes = checkboxes..
-            "checkbox[1,1.7;currency_eject;Eject incomming currency.;"..bts(settings.currency_eject).."]"
+            "checkbox[1,1.7;currency_eject;Eject incoming currency.;"..bts(settings.currency_eject).."]"
         if minetest.get_modpath("pipeworks") then
             checkboxes = checkboxes..
             "checkbox[5,1.3;accept_output_only;Accept for-sale item only.;"..bts(settings.accept_output_only).."]"..
-            "checkbox[1,1.3;split_incoming_stacks;Split incomming stacks.;"..bts(settings.split_incoming_stacks).."]"
+            "checkbox[1,1.3;split_incoming_stacks;Split incoming stacks.;"..bts(settings.split_incoming_stacks).."]"
         end
     end
 
@@ -846,11 +866,13 @@ local function get_vendor_default_fs(pos, player)
     if can_modify_vendor(pos, player) then
         settings_btn =
         "image_button[0,1.3;1,1;debug_btn.png;button_settings;]"..
-        "item_image_button[0,2.3;1,1;default:book;button_log;]"
+        "item_image_button[0,2.3;1,1;default:book;button_log;]"..
+        "item_image_button[0,3.3;1,1;default:gold_ingot;button_buy;]"
     else
         settings_btn =
         "image[0,1.3;1,1;debug_btn.png]"..
-        "item_image[0,2.3;1,1;default:book]"
+        "item_image[0,2.3;1,1;default:book]"..
+        "item_image[0,3.3;1,1;default:gold_ingot;button_buy;]"
     end
 
     local fs = base..inv_lists..settings_btn
@@ -862,6 +884,7 @@ local function get_vendor_log_fs(pos)
     local base = "size[9,9]"..
         "image_button[0,1.3;1,1;debug_btn.png;button_settings;]"..
         "item_image[0,2.3;1,1;default:book]"..
+        "item_image_button[0,3.3;1,1;default:gold_ingot;button_buy;]"..
         "button_exit[0,8;1,1;btn_exit;Done]"
 
     -- Add dynamic elements
@@ -884,6 +907,9 @@ local function get_vendor_log_fs(pos)
     return fs
 end
 
+local function show_buyer_formspec(player, pos)
+    minetest.show_formspec(player:get_player_name(), "fancy_vend:buyer;"..minetest.pos_to_string(pos), get_vendor_buyer_fs(pos, player, nil))
+end
 
 local function show_vendor_formspec(player, pos)
     local settings = get_vendor_settings(pos)
@@ -895,7 +921,7 @@ local function show_vendor_formspec(player, pos)
             minetest.show_formspec(player:get_player_name(), "fancy_vend:default;"..minetest.pos_to_string(pos), get_vendor_default_fs(pos, player))
         end
     else
-        minetest.show_formspec(player:get_player_name(), "fancy_vend:buyer;"..minetest.pos_to_string(pos), get_vendor_buyer_fs(pos, player, nil))
+        show_buyer_formspec(player, pos)
     end
 end
 
@@ -945,7 +971,6 @@ local function refresh_vendor(pos)
 
     local settings = get_vendor_settings(pos)
     local meta = minetest.get_meta(pos)
-    local alerted = stb(meta:get_string("alerted") or "false") -- check
     local status, errorcode = get_vendor_status(pos)
     local correct_vendor = get_correct_vendor(settings)
 
@@ -1109,6 +1134,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
     if fields.buy then
         local lots = math.floor(tonumber(fields.lot_count) or 1)
+	-- prevent negative numbers
+	lots = math.max(lots, 1)
         local success, message = make_purchase(pos, player, lots)
         if success then
             -- Add to vendor logs
@@ -1170,6 +1197,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
         return
     elseif fields.button_inv then
         minetest.show_formspec(player:get_player_name(), "fancy_vend:default;"..minetest.pos_to_string(pos), get_vendor_default_fs(pos, player))
+        return
+    elseif fields.button_buy then
+        minetest.show_formspec(player:get_player_name(), "fancy_vend:buyer;"..minetest.pos_to_string(pos), get_vendor_buyer_fs(pos, player, (tonumber(fields.lot_count) or 1)))
         return
     end
 
@@ -1307,9 +1337,7 @@ local vendor_template = {
                     return false
                 end
             end
-
-            -- Check stack can fit along with at least 1 purchase worth of input_item
-            return inv:room_for_item("main", stack) and inv:room_for_item("main", ItemStack({name=input_item, count=input_item_qty}))
+            return inv:room_for_item("main", stack)
         end,
     },
     allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
@@ -1490,11 +1518,6 @@ minetest.register_tool("fancy_vend:copy_tool",{
         local meta = itemstack:get_meta()
         local node_meta = minetest.get_meta(pos)
         local new_settings = minetest.deserialize(meta:get_string("settings"))
-
-        if not new_settings then
-            minetest.chat_send_player(user:get_player_name(), "You must copu a vendor's settings first")
-            return
-        end
 
         if can_modify_vendor(pos, user) then
             -- Admin vendor priv check
