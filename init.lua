@@ -25,6 +25,7 @@ local drop_vendor = "fancy_vend:player_vendor"
 local display_node_def = table.copy(minetest.registered_nodes[display_node])
 display_node_def.drop = ""
 display_node_def.groups.not_in_creative_inventory = 1
+display_node_def.pointable = false
 display_node_def.description = "Fancy Vendor Display Node (you hacker you!)"
 if pipeworks then
     display_node_def.digiline = {
@@ -393,23 +394,38 @@ end
 
 local function inv_insert(inv, listname, itemstack, quantity, from_table, pos, input_eject)
     local stackmax = itemstack:get_stack_max()
+    local name = itemstack:get_name()
     local stacks = {}
     local remaining_quantity = quantity
 
     -- Add the full stacks to the list
     while remaining_quantity > stackmax do
-        table.insert(stacks, {name = itemstack:get_name(), count = stackmax})
+        table.insert(stacks, {name = name, count = stackmax})
         remaining_quantity = remaining_quantity - stackmax
     end
     -- Add the remaining stack to the list
-    table.insert(stacks, {name = itemstack:get_name(), count = remaining_quantity})
+    table.insert(stacks, {name = name, count = remaining_quantity})
 
-    -- If tool add wears and metadatas, ignores if from_table = nil (eg, due to vendor beig admin vendor)
-    if minetest.registered_tools[itemstack:get_name()] and from_table then
+    -- If tool add wears ignores if from_table = nil (eg, due to vendor beig admin vendor)
+    if minetest.registered_tools[name] and from_table then
         for i in pairs(stacks) do
             local from_item_table = from_table[i].item:to_table()
             stacks[i].wear = from_item_table.wear
-            stacks[i].metadata = from_item_table.metadata
+        end
+    end
+
+    -- if has metadata add metadata
+    if from_table then
+        for i in pairs(stacks) do
+            local from_item_table = from_table[i].item:to_table()
+            if from_item_table.name == name then
+                if from_item_table.metadata then
+                    stacks[i].metadata = from_item_table.metadata -- Apparently some mods *cough* digtron *cough* do use deprecated metadata strings
+                end
+                if from_item_table.meta then
+                    stacks[i].meta = from_item_table.meta -- Most mods use metadata tables which is the correct method but ok
+                end
+            end
         end
     end
 
@@ -529,7 +545,7 @@ local function alert_owner_if_empty(pos)
     local status, errorcode = get_vendor_status(pos)
 
     -- Message to send
-    local stock_msg = "Your vendor trading "..settings.input_item_qty.." "..minetest.registered_items[settings.input_item].description.." for "..settings.output_item_qty.." "..minetest.registered_items[settings.output_item].description.." at position "..minetest.pos_to_string(pos, 0).." has just run out of stock."
+    local stock_msg = "Your vendor trading "..settings.input_item_qty.." "..minetest.registered_items[settings.input_item].description.." for "..settings.output_item_qty.." "..minetest.registered_items[settings.output_item].description.." at position "..minetest.pos_to_string(pos, 0).." has just run out of stock or has an error."
 
     if not alerted and not status and errorcode == "no_output" then
         -- Rubenwardy's Email Mod: https://github.com/rubenwardy/email
@@ -929,6 +945,7 @@ local function refresh_vendor(pos)
 
     local settings = get_vendor_settings(pos)
     local meta = minetest.get_meta(pos)
+    local alerted = stb(meta:get_string("alerted") or "false") -- check
     local status, errorcode = get_vendor_status(pos)
     local correct_vendor = get_correct_vendor(settings)
 
@@ -995,6 +1012,11 @@ local function refresh_vendor(pos)
         if meta:get_string("item") ~= "fancy_vend:inactive" then
             meta:set_string("item", "fancy_vend:inactive")
             update_item(pos, node)
+        end
+
+        if not alerted and not status and errorcode == "no_room" then
+            minetest.chat_send_player(meta:get_string("owner"), "[Fancy_Vend]: Error with vendor at "..minetest.pos_to_string(pos, 0)..": does not have room for payment.")
+            meta:set_string("alerted", "true")
         end
     end
 
@@ -1285,7 +1307,9 @@ local vendor_template = {
                     return false
                 end
             end
-            return inv:room_for_item("main", stack)
+
+            -- Check stack can fit along with at least 1 purchase worth of input_item
+            return inv:room_for_item("main", stack) and inv:room_for_item("main", ItemStack({name=input_item, count=input_item_qty}))
         end,
     },
     allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
@@ -1466,6 +1490,11 @@ minetest.register_tool("fancy_vend:copy_tool",{
         local meta = itemstack:get_meta()
         local node_meta = minetest.get_meta(pos)
         local new_settings = minetest.deserialize(meta:get_string("settings"))
+
+        if not new_settings then
+            minetest.chat_send_player(user:get_player_name(), "You must copu a vendor's settings first")
+            return
+        end
 
         if can_modify_vendor(pos, user) then
             -- Admin vendor priv check
