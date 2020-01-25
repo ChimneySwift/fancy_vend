@@ -1339,7 +1339,7 @@ local vendor_template = {
         end,
     },
     allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
-        if not can_access_vendor_inv(player, pos) then
+        if (not can_access_vendor_inv(player, pos)) or to_list == "wanted_item" or to_list == "given_item" then
             return 0
         end
         return count
